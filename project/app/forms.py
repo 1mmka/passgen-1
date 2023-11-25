@@ -9,4 +9,4 @@ class AuthenticateClient(AuthenticationForm):
 class RegisterForm(UserCreationForm):
     class Meta:
         model = Client
-        fields = ['username','password1','password2']
+        fields = ['username','password1','password2','email']
