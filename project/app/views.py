@@ -1,14 +1,28 @@
+from datetime import date,datetime
+from django.forms.models import BaseModelForm
 from django.shortcuts import render,redirect
 from django.contrib.auth.views import LoginView,PasswordChangeView,PasswordChangeDoneView
 from app.forms import AuthenticateClient,RegisterForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib.auth.forms import PasswordChangeForm
-from django.views.generic import CreateView,View
+from django.views.generic import CreateView,View,TemplateView
 from app.models import Client
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import HttpResponse
+
+#Mixin
+class RequiredThreshold(object):
+    def dispatch(self, request, *args, **kwargs):
+        current_date = date.today()
+        birth_date = request.user.birth_date
+
+        if (current_date.year - birth_date.year) - ((current_date.month, current_date.day) < (birth_date.month, birth_date.day)) < 18:
+            return HttpResponse('Under 18, retry please')
+        
+        return super().dispatch(request, *args, **kwargs)
+    
 
 # Create your views here.
 class LoginClient(LoginView):
@@ -19,6 +33,7 @@ class ChangePassword(LoginRequiredMixin,PasswordChangeView):
     template_name = 'change.html'
     form_class = PasswordChangeForm
     success_url = reverse_lazy('login')
+    login_url = reverse_lazy('login')
 
 class RegisterClient(CreateView):
     model = Client
@@ -26,8 +41,9 @@ class RegisterClient(CreateView):
     template_name = 'register.html'
     success_url = reverse_lazy('login')
 
-def home(request):
-    return render(request,'home.html')
+class HomePage(LoginRequiredMixin,RequiredThreshold,TemplateView):
+    template_name = 'home.html'
+    login_url = reverse_lazy('login')
 
 # reset password views
 # по введенной почте найти в базе пользователя и сделать токен
